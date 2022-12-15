@@ -243,6 +243,18 @@ fn math_blocks_logic(map: &mut Map) {
     }
 }
 
+/// This function is just here. 
+/// 
+/// It doesn't actually do anything in this specific simulation
+/// 
+/// The way I am thinking of implementing this game with
+/// bevy, this would be automatic. 
+fn cleanup (map: &mut Map) {
+    for block in map.blocks.iter_mut() {
+        block.active = false;
+    }
+}
+
 fn main() {
     let mut main_map = Map::default();
     startup(&mut main_map);
@@ -257,8 +269,11 @@ fn main() {
 
         math_blocks_logic(&mut main_map);
 
+        cleanup(&mut main_map);
+
         i += 1;
 
+        // Let's pretend we pressed the button 500 times
         if i == 500 {
             break;
         }
