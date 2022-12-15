@@ -68,11 +68,23 @@ struct Block {
     active: bool,
 }
 
+#[derive(PartialEq, Eq)]
 enum Side {
     Right,
     Left,
     Up,
     Down,
+}
+
+impl Side {
+    fn opposite (&self) -> Self{
+        match self {
+            Side::Right => Side::Left ,
+            Side::Left =>  Side::Right ,
+            Side::Up =>    Side::Down ,
+            Side::Down =>  Side::Up ,
+        }
+    }
 }
 
 impl Block {
@@ -135,23 +147,76 @@ fn startup(map: &mut Map) {
     map.add_block(BlockType::NormalBlock, Vec2::from(-1, 0));
 }
 
-fn get_index_of_transmitting_block(map: &Map, side: Side, block_coordinates: Vec2) -> Option<usize> {
+/// Get the index of the neighbour block in `map.blocks`.
+/// 
+/// If the neighbour block is a ValueTransmitter block,
+/// it checks which value it is transmitting
+/// 
+/// ***I won't refactor this. If it works, it works***
+fn get_index_of_transmitting_block(map: &Map, mut side: Side, block_coordinates: Vec2) -> Option<usize> {
     let mut neighbour_coordinates = block_coordinates;
+    loop {
 
-    if let Side::Left = side   { neighbour_coordinates.x -= 1}
-    if let Side::Right = side  { neighbour_coordinates.x += 1}
-    if let Side::Up = side     { neighbour_coordinates.y += 1}
-    if let Side::Down = side   { neighbour_coordinates.y -= 1}
+        if let Side::Left = side   { neighbour_coordinates.x -= 1}
+        if let Side::Right = side  { neighbour_coordinates.x += 1}
+        if let Side::Up = side     { neighbour_coordinates.y += 1}
+        if let Side::Down = side   { neighbour_coordinates.y -= 1}
 
-    let mut index = 0;
-    for block in map.blocks.iter() {
-        if neighbour_coordinates == block.coordinates {
-            return Some(index);
+        let mut index = 0;
+        for block in map.blocks.iter() {
+            
+            if neighbour_coordinates == block.coordinates {
+                
+                if let BlockType::ValueTransmitter = block.block_type {
+                    
+                    if let ConnectionType::Transmitting = block.number_connections.left {
+                        
+                        if let Side::Left = side { } else {
+                            if let Side::Left = side.opposite() { } else {
+                                side = Side::Left;
+                                break;
+                            }
+                        }  
+                    }
+                    
+                    if let ConnectionType::Transmitting = block.number_connections.right {
+                        
+                        if let Side::Right = side { } else {
+                            if let Side::Right = side.opposite() { } else {
+                                side = Side::Right;
+                                break;
+                            }
+                        }  
+                    }
+
+                    if let ConnectionType::Transmitting = block.number_connections.up {
+                        
+                        if let Side::Up = side { } else {
+                            if let Side::Up = side.opposite() { } else {
+                                side = Side::Up;
+                                break;
+                            }
+                        }  
+                    }
+
+                    if let ConnectionType::Transmitting = block.number_connections.down {
+                        
+                        if let Side::Down = side { } else {
+                            if let Side::Down = side.opposite() { } else {
+                                side = Side::Down;
+                                break;
+                            }
+                        }  
+                    }
+                } else {
+                    return Some(index);
+                }
+                return None;
+            }
+            index += 1;
         }
-        index += 1;
+
     }
-    return None;
-    
 }
 fn math_blocks_logic(map: &mut Map) {
     for block in map.blocks.clone().iter_mut() {
@@ -174,8 +239,6 @@ fn math_blocks_logic(map: &mut Map) {
             block.coordinates
         ).expect("Expected Output Block!");
 
-        dbg!(output_index, input_a_index, input_b_index);
-        
         map.blocks[output_index].value = map.blocks[input_a_index].value + map.blocks[input_b_index].value;
     }
 }
@@ -184,9 +247,9 @@ fn main() {
     let mut main_map = Map::default();
     startup(&mut main_map);
     
-
+    let mut i = 0;
     // Systems
-    //loop {
+    loop {
         // We don't have a button
         main_map.blocks[0].active = true;
         // Here would normally go the function for the propagation
@@ -194,6 +257,11 @@ fn main() {
 
         math_blocks_logic(&mut main_map);
 
-    //}
+        i += 1;
+
+        if i == 500 {
+            break;
+        }
+    }
     println!("{}", main_map);
 }
